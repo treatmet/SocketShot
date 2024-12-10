@@ -2020,6 +2020,7 @@ var secondIntervalFunction = function(){
 	}
 }
 
+
 function incrementTimeInGameForPlayers(){
 	var playerList = player.getPlayerList();
 	for (var p in playerList){
