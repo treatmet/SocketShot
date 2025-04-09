@@ -4629,12 +4629,16 @@ function drawHUD(){
 			
 			ctx.font = '18px Electrolize';
 			fillText(myPlayer.grenades, canvasWidth + 55 - iconWidth, canvasHeight - 77 - liftBottomHUD);
-			
 			if (showWhiteGrenadeRect > 0){
 				ctx.globalAlpha = 1;
 				showWhiteGrenadeRect--;
 				ctx.fillRect(grenadeIconrectX, grenadeIconRectY, Img.grenadeCountIcon.width, Img.grenadeCountIcon.height);
 			}
+			// Add the "Press V to switch" text below the grenade indicator
+			ctx.font = '14px Electrolize'; // Adjust font size if needed
+			ctx.fillStyle = "#FFFFFF"; // Set text color
+			fillText("Press V to switch", canvasWidth - iconWidth + 20, canvasHeight - 50 - liftBottomHUD);
+
 		}
 
 
@@ -7806,8 +7810,12 @@ document.onkeydown = function(event){ //SendInput
 			hitKeyCode = keyHit.default;
 		}
 	}
-
-	if(hitKeyCode === 87 && chatInput.style.display == "none"){ //W 
+	if(hitKeyCode === 86 && chatInput.style.display == "none"){ //W 
+		if (!shop.active){
+			keyPress(86, true);
+		}
+	}
+	else if(hitKeyCode === 87 && chatInput.style.display == "none"){ //W 
 		if (!myPlayer.pressingW && !shop.active){
 			keyPress(87, true);
 			keyPress(83, false);

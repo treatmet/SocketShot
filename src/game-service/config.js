@@ -114,7 +114,7 @@ global.assistDamageThreshold = 30;
 
 //Boost config
 global.boostDamage = 34;
-global.boostEnergyCost = 0;
+global.boostEnergyCost = 25;
 global.meleeRange = 50;
 
 global.grappleInsteadOfBoost = true;

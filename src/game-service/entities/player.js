@@ -60,7 +60,8 @@ var Player = function(id, cognitoSub, name, team, customizations, settings, part
 		experience:0,
 		medals:{},
 		ticksSinceLastPing:0,
-		cumulativeAllyDamage:0
+		cumulativeAllyDamage:0,
+		spacebarMode: "grapple", // Default to grapple
 	}
 		
 	//Initialize Player
@@ -1296,7 +1297,9 @@ var Player = function(id, cognitoSub, name, team, customizations, settings, part
 	}
 
 	self.boost = function(){
-		self.expendEnergy(boostEnergyCost);
+		if (self.spacebarMode == "boost") {
+			self.expendEnergy(boostEnergyCost);
+		}
 		updateEffectList.push({type:3,playerId:self.id});
 		updatePlayerList.push({id:self.id,property:"boosting",value:self.boosting});
 
@@ -1925,7 +1928,12 @@ Player.onConnect = function(socket, cognitoSub, name, team, partyId){
 					}
 					else if(data.inputId === 37){ //Left
 						player.pressingLeft = data.state;
-					}	
+					} else if (data.inputId === 86 && data.state) { // V key
+						// Toggle spacebar mode
+						player.spacebarMode = player.spacebarMode === "grapple" ? "boost" : "grapple";
+						socket.emit('addToChat', `Spacebar mode toggled to: ${player.spacebarMode}`);
+					}
+
 					else if(data.inputId === 32){ //SPACE
 						if ((player.isWalking() || !cloakingEnabled) && !player.energyExhausted && (grappleInsteadOfBoost == true || player.boosting == 0) && player.holdingBag == false){						
 							if (player.cloakEngaged){
@@ -1934,7 +1942,7 @@ Player.onConnect = function(socket, cognitoSub, name, team, partyId){
 							}
 
 							
-							if (grappleInsteadOfBoost) { //BOOST VS GRAPPLE VS BOOST!!!
+							if (player.spacebarMode === "grapple") { //BOOST VS GRAPPLE VS BOOST!!!
 								if (!player.grapple || player.grapple.firing || typeof player.grapple.x === 'undefined' || grappleWhileGrappling){
 									player.shootGrapple();
 								} 
