@@ -7810,7 +7810,7 @@ document.onkeydown = function(event){ //SendInput
 			hitKeyCode = keyHit.default;
 		}
 	}
-	if(hitKeyCode === 86 && chatInput.style.display == "none"){ //W 
+	if(hitKeyCode === 86 && chatInput.style.display == "none"){ //V
 		if (!shop.active){
 			keyPress(86, true);
 		}
