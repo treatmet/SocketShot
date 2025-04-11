@@ -2002,6 +2002,7 @@ var secondIntervalFunction = function(){
 	//Repeating game server DB sync
 	secondsSinceLastServerSync++;
 	if (secondsSinceLastServerSync > syncServerWithDbInterval){
+		logg("gameServerSync because of interval...");
 		if (pregame == true){
 			if ((gametype == "ctf" || gametype == "slayer" || gametype == "elim") && getNumPlayersInGame() >= 4 && !customServer){
 				console.log("Restarting because gametype is " + gametype + " and there are " + getNumPlayersInGame() + " players (need 4)");
@@ -2137,6 +2138,7 @@ var gameServerSync = function(cognitoSubToRemoveFromIncoming = false){
 	obj.environment = process.env.Environment;
 	if (!obj.environment){obj.environment = "local";}
 
+	console.log("gameServerSync... now running dbGameServerUpdate");
 	dataAccessFunctions.dbGameServerUpdate(obj, cognitoSubToRemoveFromIncoming);
 	secondsSinceLastServerSync = 0;
 }

@@ -355,7 +355,7 @@ function removeStaleTargetGroups(cb){
 function getEBConfiguration(cb){
     var params = {
         EnvironmentName: EBName,
-        ApplicationName: "GameService"
+        ApplicationName: "SocketShot-App"
     };
     elasticbeanstalk.describeConfigurationSettings(params, function(err, data) {
         if (err) {
