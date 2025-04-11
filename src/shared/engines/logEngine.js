@@ -44,8 +44,8 @@ var reinitStream = function(){
 
 
 
-	// logg("\r\n");
-	// logg("----------STREAMWRITER INITIALIZED WITH IP: " + myIP + "---------FOLDER: " + reinitYear + "_" + reinitMonth + "_" + reinitDate + "------------\r\n");		
+	logg("\r\n");
+	logg("----------STREAMWRITER INITIALIZED WITH IP: " + myIP + "---------FOLDER: " + reinitYear + "_" + reinitMonth + "_" + reinitDate + "------------\r\n");		
 }
 
 
