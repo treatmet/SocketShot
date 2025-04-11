@@ -231,6 +231,7 @@ function redirectToUrl(url){
 		return;
 	}
 	url = url + getTokenUrlParams();
+	//url = "https://google.com"
 	console.log("Redirecting webpage to " + url);
 	window.location.href = url;
 }
