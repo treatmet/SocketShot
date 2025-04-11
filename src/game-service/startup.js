@@ -153,34 +153,60 @@ function getIP(){
 	myUrl = myIP + ":" + port;
 }
 
-//Get IP Address for RW_SERV (AWS)
+// Get IP Address and Instance ID for RW_SERV (AWS) using IMDSv2
 function getAwsIp() {
-	const request = require('request-promise');
-	request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
-		if (!error && response.statusCode === 200 && response.body) {
-			myIP = response.body;
-			myUrl = myIP + ":" + port;
-			logEngine.reinitStream();
-			request('http://169.254.169.254/latest/meta-data/instance-id', function (errorInst, responseInst, bodyInst) {
-				if (!errorInst && responseInst.statusCode === 200 && responseInst.body) {
-					instanceId = responseInst.body;					
-					logg("Got AWS instanceId: " + instanceId);
-					myQueryString = "?server=" + instanceId.substring(2) + "&process=" + port.toString().substring(2);
-				}
-				else {
-					log("AWS API ERROR -- Unable to Get Instance Id");
-				}
-			}).catch(function (err){
-				log("AWS API ERROR -- Unable to Get Instance Id:");
-				log(util.format(err));
-			});
-		}
-	}).catch(function (err){
-		logg("ERROR: FAILED TO GET AWS IPV4 ADDRESS (ignore this if hosting outside AWS)");
-		logg(util.format(err));
-		//getIP(); //If the previous command fails, we arent in AWS, so try the local method
-	});
+  const request = require('request-promise');
+
+  // Request a token with a TTL of 6 hours (21600 seconds)
+  const tokenOptions = {
+    method: 'PUT',
+    uri: 'http://169.254.169.254/latest/api/token',
+    headers: {
+      'X-aws-ec2-metadata-token-ttl-seconds': '21600'
+    }
+  };
+
+  request(tokenOptions)
+    .then(token => {
+      // Once we have the token, get the local IPv4 address.
+      const ipOptions = {
+        uri: 'http://169.254.169.254/latest/meta-data/local-ipv4',
+        headers: {
+          'X-aws-ec2-metadata-token': token
+        }
+      };
+      return request(ipOptions)
+        .then(ip => {
+          myIP = ip;
+          myUrl = myIP + ":" + port;
+          logEngine.reinitStream();
+
+          // Return the token along with the next request for the instance ID.
+          return { token: token };
+        });
+    })
+    .then(({ token }) => {
+      // Now get the instance ID
+      const instOptions = {
+        uri: 'http://169.254.169.254/latest/meta-data/instance-id',
+        headers: {
+          'X-aws-ec2-metadata-token': token
+        }
+      };
+      return request(instOptions);
+    })
+    .then(instanceIdRes => {
+      instanceId = instanceIdRes;
+      logg("Got AWS instanceId: " + instanceId);
+      myQueryString = "?server=" + instanceId.substring(2) + "&process=" + port.toString().substring(2);
+    })
+    .catch(err => {
+      logg("ERROR: FAILED TO GET AWS METADATA (ignore this if hosting outside AWS)");
+      logg(util.format(err));
+      // Optionally, fallback logic can be added here.
+    });
 }
+
 
 function crash(){
 	var newVar = alskdjf.thisIsUndefined;

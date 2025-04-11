@@ -133,25 +133,43 @@ function getIP(){
 	myUrl = myIP + ":" + port;
 }
 
-//Get IP Address for RW_SERV (AWS)
+// Get IP Address for RW_SERV (AWS) using IMDSv2
 function getAwsIp(cb) {
-	const request = require('request-promise');
-	request('http://169.254.169.254/latest/meta-data/local-ipv4', function (error, response, body) {
-		if (!error && response.statusCode === 200 && response.body) {
-			myIP = response.body;
-			logEngine.reinitStream();
-			myUrl = myIP + ":" + port;
-			cb();
-		}
-	}).catch(function (err){
-		logg("ERROR: FAILED TO GET AWS IPV4 ADDRESS (ignore this if hosting outside AWS)");
-		logg(util.format(err));
-		//getIP(); //If the previous command fails, we arent in AWS, so try the local method
-	});
-}
+  const request = require('request-promise');
 
-function crash(){
-	var newVar = alskdjf.thisIsUndefined;
+  // First, request a token with a TTL of 6 hours (21600 seconds)
+  const tokenOptions = {
+    method: 'PUT',
+    uri: 'http://169.254.169.254/latest/api/token',
+    headers: {
+      'X-aws-ec2-metadata-token-ttl-seconds': '21600'
+    }
+  };
+
+  request(tokenOptions)
+    .then(token => {
+      // Use the token to request the local IPv4 address
+      const ipOptions = {
+        uri: 'http://169.254.169.254/latest/meta-data/local-ipv4',
+        headers: {
+          'X-aws-ec2-metadata-token': token
+        }
+      };
+      return request(ipOptions);
+    })
+    .then(ip => {
+      // Use the IP as needed in your app
+      myIP = ip;
+      logEngine.reinitStream();
+      myUrl = myIP + ":" + port;
+      cb();
+    })
+    .catch(err => {
+      logg("ERROR: FAILED TO GET AWS IPV4 ADDRESS (ignore this if hosting outside AWS)");
+      logg(util.format(err));
+      // Optionally, you could call the callback anyway if appropriate:
+      // cb();
+    });
 }
 
 //-----------------------PROCESS REGISTRATION-----------------------------------
@@ -164,22 +182,36 @@ function crash(){
 //5. Add rules to Load Balancer pointing to these target groups
 
 
-function getInstanceIdAndAddProcessesToLoadBalancer(){
-	logg("BEGIN EB PROCESS REGISTRATION");
-	const request = require('request-promise');
-	request('http://169.254.169.254/latest/meta-data/instance-id', function (error, response, body) {
-		if (!error && response.statusCode === 200 && response.body) {
-			instanceId = response.body;
+function getInstanceIdAndAddProcessesToLoadBalancer() {
+  logg("BEGIN EB PROCESS REGISTRATION");
+  const request = require('request-promise');
+
+  // Request a token for IMDSv2
+  const tokenOptions = {
+    method: 'PUT',
+    uri: 'http://169.254.169.254/latest/api/token',
+    headers: { 'X-aws-ec2-metadata-token-ttl-seconds': '21600' }
+  };
+
+  request(tokenOptions)
+    .then(token => {
+      // Now request the instance ID using the token
+      const instOptions = {
+        uri: 'http://169.254.169.254/latest/meta-data/instance-id',
+        headers: { 'X-aws-ec2-metadata-token': token }
+      };
+      return request(instOptions);
+    })
+    .then(instanceIdResponse => {
+      instanceId = instanceIdResponse;
       updateLoadBalancer(instanceId);
-		}
-		else {
-			log("AWS API ERROR -- Unable to Get Instance Id");
-		}
-	}).catch(function (err){
-		log("AWS API ERROR -- Unable to Get Instance Id:");
-		log(util.format(err));
-	});
+    })
+    .catch(err => {
+      log("AWS API ERROR -- Unable to Get Instance Id:");
+      log(util.format(err));
+    });
 }
+
 
 function updateLoadBalancer(instanceId){
 	log("REGISTERING GAME SERVER(S) and Web Server on LoadBalancer:" + process.env.EBName);
@@ -430,7 +462,7 @@ function upsertProcessToTargetGroup(targetGroupArns, instanceId, port, tgPrefix,
 }
 
 function getLoadBalancerArn(EBName, cb){
-  log("Getting LoadBalancer Arn...");
+  log("Getting LoadBalancer Arn...     EBName:" + EBName);
 	var EBparams = {
 		EnvironmentName:EBName
 	};

@@ -73,9 +73,9 @@ global.logg = function(msg) {
 	
 	var logMsgText = hours + ':' + minutes + '.' + seconds + '> ' + msg;
 	console.log(logMsgText);	
-	// if (s3stream){
-	// 	s3stream.write(logMsgText+'\r\n');
-	// }
+	if (s3stream){
+		s3stream.write(logMsgText+'\r\n');
+	}
 }
 
 module.exports.reinitStream = reinitStream;
