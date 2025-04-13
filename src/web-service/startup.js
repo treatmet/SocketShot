@@ -557,7 +557,7 @@ function createTargetGroup(name, port, cb){
 		HealthCheckTimeoutSeconds: 5,
 		HealthyThresholdCount: 5,
 		Matcher: {
-			HttpCode: '200'
+			HttpCode: '200,304'
 		},
 		Port: port,
 		Protocol: 'HTTP',

@@ -19,7 +19,11 @@ testDB();
 app.use(cookieParser());
 
 
-serv.listen(port);
+serv.listen(port, '0.0.0.0', () => {
+	console.log('Server running on port' + port);
+  });
+
+
 app.use(gameRouter);
 app.use(userRouter);
 
