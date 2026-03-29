@@ -1,13 +1,17 @@
 branch-defaults:
   default:
-    environment: NamelessConflict-Production
+    environment: SocketShot-Prod-env
+environment-defaults:
+  SocketShot-Prod-env:
+    branch: null
+    repository: null
 global:
-  application_name: GameService
+  application_name: SocketShot-App
   branch: null
-  default_ec2_keyname: DriveKeyPair
-  default_platform: Node.js 12 running on 64bit Amazon Linux 2
+  default_ec2_keyname: DriveKeyPairOhio
+  default_platform: Node.js 22 running on 64bit Amazon Linux 2
   default_region: us-east-2
-  environment: NamelessConflict-Production
+  environment: SocketShot-Prod-env
   include_git_submodules: true
   instance_profile: null
   platform_name: null

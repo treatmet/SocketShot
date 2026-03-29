@@ -36,18 +36,18 @@
   },
   "scripts": {
     "start": "node app.js",
-    "deploy": "eb deploy NamelessConflict-Production --staged",
-    "deploy:ci": "eb deploy NamelessConflict-Production"
+    "deploy": "eb deploy SocketShot-Prod-env --staged",
+    "deploy:ci": "eb deploy SocketShot-Prod-env"
   },
   "author": "",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/treatmet/NamelessConflict.git"
+    "url": "git+https://github.com/treatmet/SocketShot.git"
   },
   "keywords": [],
   "bugs": {
-    "url": "https://github.com/treatmet/NamelessConflict/issues"
+    "url": "https://github.com/treatmet/SocketShot/issues"
   },
-  "homepage": "https://github.com/treatmet/NamelessConflict#readme"
+  "homepage": "https://github.com/treatmet/SocketShot#readme"
 }

@@ -27,12 +27,12 @@ router.get('/game', function(req, res) {
 });
 
 router.get('/ping', function(req, res) {
-	res.send({
+	res.set('Cache-Control', 'no-store'); // prevent caching
+	res.status(200).send({
 		host: hostname,
 		ip: myUrl
 	});
 });
-
 
 router.post('/playNow', async function (req, res) {
 	log("playNow endpoint");

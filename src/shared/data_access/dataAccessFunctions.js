@@ -1377,6 +1377,8 @@ var getEmptyServersFromDB = function(cb){
 
 //sync gameServerSync gameSync upsertGameServer update game server
 var dbGameServerUpdate = function(obj, cognitoSubToRemoveFromIncoming = false) {
+	logg("dbGameServerUpdate!!! RW_SERV with " + myUrl + " and obj:");
+	logObj(obj);
 	dataAccess.dbFindAwait("RW_SERV", {url:myUrl}, async function(err, res){ //!!! Sort by timestamp
 		var serverParam = {url:myUrl};
 		if (res && res[0]){

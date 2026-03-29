@@ -19,3 +19,4 @@ artifacts
 
 #Lambda excludes
 src/lambda-server-admin/config.json
+src/lambda-server-admin/index.zip
