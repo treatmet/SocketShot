@@ -1,4 +1,6 @@
 var player = require('../entities/player.js');
+var pickup = require('../entities/pickup.js');
+var grenade = require('../entities/grenade.js');
 
 var organicDiagLeniency = 13;
 var checkIfInLineOfShot = function(shooter, target, shot){ //hitDetection hit detection
@@ -374,10 +376,10 @@ var checkBodyCollisionWithGroupOfBodies = function(self, list){
 			var dist1 = Math.sqrt(dx1*dx1 + dy1*dy1);
 			var ax1 = dx1/dist1;
 			var ay1 = dy1/dist1;
-			if (dist1 < meleeRange){				
-				if (typeof self.boosting != 'undefined' && self.boosting > 0){  //melee boost collision bash smash
+			if (dist1 < meleeRange){
+				if ((typeof self.boosting != 'undefined' && self.boosting > 0) || (self.grapple && self.grapple.firing === false)){  //melee boost collision bash smash
 
-					if(self.throwingObject == 0){ 
+					if(self.throwingObject == 0 && !(self.grapple && self.grapple.firing === false)){ 
 						self.updatePropAndSend("throwingObject", 20);
 						self.updatePropAndSend("shootingDir", self.walkingDir);
 					}
@@ -404,6 +406,210 @@ var checkBodyCollisionWithGroupOfBodies = function(self, list){
 	}
 	if (posUpdated){return true;}
 	else {return false;}
+}
+
+var getPlayerCollided = function(self, margin = 0) { //Stretched 2 frame hitbox logic
+    var list = player.getPlayerList();
+	if (!self.width) {self.width = 0;}
+	if (!self.height) {self.height = 0;}
+	self.width += margin;
+	self.height += margin;
+
+	// Create line segment for the bullet's path
+    var bulletStart = { x: self.prevX, y: self.prevY };
+    var bulletEnd = { x: self.x, y: self.y };
+
+    for (var i in list) {
+        var entity = list[i];
+		if (typeof entity === 'undefined'){continue;}
+		if (entity.id == self.id ){continue;}
+		if (typeof entity.team != "undefined" && entity.team == 0){continue;}
+		if (typeof entity.health != "undefined" && entity.health <= 0){continue;}
+		if (typeof entity.grapple != "undefined" && entity.grapple.target != "undefined" && entity.grapple.targetId == self.id) {continue;} //Cant grapple someone who's already grappling you
+
+        // Player hitbox
+        var entityMinX = entity.x - entity.width / 2;
+        var entityMaxX = entity.x + entity.width / 2;
+        var entityMinY = entity.y - entity.height / 2;
+        var entityMaxY = entity.y + entity.height / 2;
+
+        // Define the four corners of the player's hitbox
+        var topLeft = { x: entityMinX, y: entityMinY };
+        var topRight = { x: entityMaxX, y: entityMinY };
+        var bottomLeft = { x: entityMinX, y: entityMaxY };
+        var bottomRight = { x: entityMaxX, y: entityMaxY };
+
+        // Check for intersection with each edge of the player hitbox
+        var intersects = 
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topLeft, topRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topRight, bottomRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomRight, bottomLeft) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomLeft, topLeft);
+
+        if (intersects) {
+            return entity;
+        }
+    }
+    return false;
+}
+
+var getPickupCollided = function(self, margin = 0) { //Stretched 2 frame hitbox logic
+    var list = pickup.getPickupList();
+	if (!self.width) {self.width = 0;}
+	if (!self.height) {self.height = 0;}
+	self.width += margin;
+	self.height += margin;
+
+	// Create line segment for the bullet's path
+    var bulletStart = { x: self.prevX, y: self.prevY };
+    var bulletEnd = { x: self.x, y: self.y };
+
+    for (var i in list) {
+        var entity = list[i];
+		if (typeof entity === 'undefined'){continue;}
+		if (entity.respawnTimer != 0){continue;}
+		if (entity.type == 1 && player.getPlayerById(self.id).health > 97) {continue;}
+		if (entity.type == 5 && player.getPlayerById(self.id).health >= 101) {continue;}
+
+        // Pickup hitbox
+        var entityMinX = entity.x;
+        var entityMaxX = entity.x + entity.width;
+        var entityMinY = entity.y;
+        var entityMaxY = entity.y + entity.height;
+
+        // Define the four corners of the pickups's hitbox
+        var topLeft = { x: entityMinX, y: entityMinY };
+        var topRight = { x: entityMaxX, y: entityMinY };
+        var bottomLeft = { x: entityMinX, y: entityMaxY };
+        var bottomRight = { x: entityMaxX, y: entityMaxY };
+
+        // Check for intersection with each edge of the player hitbox
+        var intersects = 
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topLeft, topRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topRight, bottomRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomRight, bottomLeft) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomLeft, topLeft);
+
+        if (intersects) {
+			entity.homeX = entity.x;
+			entity.homeY = entity.y;
+            return entity;
+        }
+    }
+    return false;
+}
+
+var getGrenadeCollided = function(self, margin = 0) { //Stretched 2 frame hitbox logic
+    var list = grenade.getList();
+
+	// Create line segment for the bullet's path
+    var bulletStart = { x: self.prevX, y: self.prevY };
+    var bulletEnd = { x: self.x, y: self.y };
+
+    for (var i in list) {
+        var entity = list[i];
+		if (typeof entity === 'undefined'){continue;}
+		if (!entity.width) {entity.width = entity.radius * 2; entity.height = entity.radius * 2;}
+		
+        // Nade hitbox
+        var entityMinX = entity.x - entity.width;
+        var entityMaxX = entity.x + entity.width;
+        var entityMinY = entity.y - entity.height;
+        var entityMaxY = entity.y + entity.height;
+
+        // Define the four corners of the Nade's hitbox
+        var topLeft = { x: entityMinX, y: entityMinY };
+        var topRight = { x: entityMaxX, y: entityMinY };
+        var bottomLeft = { x: entityMinX, y: entityMaxY };
+        var bottomRight = { x: entityMaxX, y: entityMaxY };
+
+        // Check for intersection with each edge of the player hitbox
+        var intersects = 
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topLeft, topRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, topRight, bottomRight) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomRight, bottomLeft) ||
+            doLineSegmentsIntersect(bulletStart, bulletEnd, bottomLeft, topLeft);
+
+        if (intersects) {
+			var newTime = entity.timer + grenadeGrabAddTime;
+			if (newTime > grenadeTimer) {newTime = grenadeTimer;}
+			entity.updatePropAndSend("timer", newTime);
+            return entity;
+        }
+    }
+    return false;
+}
+
+var getBagCollided = function(self, margin = 0) { //Stretched 2 frame hitbox logic
+	if (gametype != "ctf") {return;}
+	var entity = player.getPlayerList()[self.id].team == 2 ? bagRed : bagBlue;
+	entity.width = 65;
+	entity.height = 50;
+	if (typeof entity === 'undefined'){return;}
+	if (entity.captured == true) { return;}
+
+	// Create line segment for the bullet's path
+    var bulletStart = { x: self.prevX, y: self.prevY };
+    var bulletEnd = { x: self.x, y: self.y };
+
+
+	// Bag hitbox
+	var entityMinX = entity.x - entity.width/2;
+	var entityMaxX = entity.x + entity.width/2;
+	var entityMinY = entity.y - entity.height/2;
+	var entityMaxY = entity.y + entity.height/2;
+
+	// Define the four corners of the Bag's hitbox
+	var topLeft = { x: entityMinX, y: entityMinY };
+	var topRight = { x: entityMaxX, y: entityMinY };
+	var bottomLeft = { x: entityMinX, y: entityMaxY };
+	var bottomRight = { x: entityMaxX, y: entityMaxY };
+
+	//console.log("grap:"+ self.x + "," + self.y + " topLeft:(" + entityMinX + "," + entityMinY + ") bottomRight:(" + entityMaxX + "," + entityMaxY + ")") ;
+
+	
+	// Check for intersection with each edge of the player hitbox
+	var intersects = 
+		doLineSegmentsIntersect(bulletStart, bulletEnd, topLeft, topRight) ||
+		doLineSegmentsIntersect(bulletStart, bulletEnd, topRight, bottomRight) ||
+		doLineSegmentsIntersect(bulletStart, bulletEnd, bottomRight, bottomLeft) ||
+		doLineSegmentsIntersect(bulletStart, bulletEnd, bottomLeft, topLeft);
+
+	if (intersects) {
+		return entity;
+	}
+
+    return false;
+}
+
+// Helper function to check if two line segments (p1, p2) and (q1, q2) intersect
+function doLineSegmentsIntersect(p1, p2, q1, q2) {
+	function orientation(a, b, c) {
+		var val = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+		if (val === 0) return 0;  // collinear
+		return (val > 0) ? 1 : 2; // clock or counterclock wise
+	}
+
+	function onSegment(p, q, r) {
+		return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) && 
+				q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+	}
+
+	var o1 = orientation(p1, p2, q1);
+	var o2 = orientation(p1, p2, q2);
+	var o3 = orientation(q1, q2, p1);
+	var o4 = orientation(q1, q2, p2);
+
+	// General case
+	if (o1 !== o2 && o3 !== o4) return true;
+
+	// Special cases (collinear points on segment)
+	if (o1 === 0 && onSegment(p1, q1, p2)) return true;
+	if (o2 === 0 && onSegment(p1, q2, p2)) return true;
+	if (o3 === 0 && onSegment(q1, p1, q2)) return true;
+	if (o4 === 0 && onSegment(q1, p2, q2)) return true;
+
+	return false; // No intersection
 }
 
 var sprayBloodOntoTarget = function(shootingDir, targetX, targetY, targetId) {
@@ -434,7 +640,7 @@ var checkPointCollisionWithGroup = function(self, list, margin, move = false){
 		if (typeof entity.health != "undefined" && (entity.health <= 0 || entity.team === 0)){continue;}
 		var encounteredEntityId = false;
 
-		if (self.x == entity.x && self.y == entity.y){self.x -= 5; encounteredEntityId = entity.id; console.log("ON TOP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"); continue;} //Added to avoid math issues when entities are directly on top of each other (distance = 0)
+		if (self.x == entity.x && self.y == entity.y){self.x -= 5; encounteredEntityId = entity.id; continue;} //Added to avoid math issues when entities are directly on top of each other (distance = 0)
 		var dx1 = self.x - entity.x;
 		var dy1 = self.y - entity.y;
 		var dist1 = Math.sqrt(dx1*dx1 + dy1*dy1);
@@ -546,3 +752,7 @@ module.exports.calculateDrag = calculateDrag;
 module.exports.checkPointCollisionWithGroup = checkPointCollisionWithGroup;
 module.exports.checkPointCollisionWithGroupAndMove = checkPointCollisionWithGroupAndMove;
 module.exports.checkBodyCollisionWithGroupOfBodies = checkBodyCollisionWithGroupOfBodies;
+module.exports.getPlayerCollided = getPlayerCollided;
+module.exports.getPickupCollided = getPickupCollided;
+module.exports.getBagCollided = getBagCollided;
+module.exports.getGrenadeCollided = getGrenadeCollided;

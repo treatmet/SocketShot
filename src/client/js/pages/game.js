@@ -1,3 +1,4 @@
+//const { log } = require("winston");
 
 page = "game";
 //document.oncontextmenu =new Function("return false;")
@@ -87,7 +88,7 @@ var localGame = false;
 
 
 //-----------------Config----------------------
-var version = "v 0.6.1 - the medals update"; //Scalable + customizations
+var version = "v 0.7.0 - the grapple update";
 
 const spectateMoveSpeed = 10;
 var screenShakeScale = 0.5;
@@ -177,7 +178,7 @@ var noShadows = false;
 //Initialize client-side code variables
 
 //Shared settings
-var grappleSpeed = 20;
+var grappleSpeed = 0;
 var pushStrength = 0; //14
 var blockPushSpeed = 0; //4
 var speedCap = 0;
@@ -1244,6 +1245,9 @@ function updateFunction(playerDataPack, thugDataPack, pickupDataPack, notificati
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 
 		if (playerDataPack[i].property == "grapple"){
+			if (playerDataPack[i].value.firing == true){
+				sfx.GrappleShot.play();
+			}
 			//log(playerDataPack[i].value);
 		}
 
@@ -1381,12 +1385,14 @@ function updateFunction(playerDataPack, thugDataPack, pickupDataPack, notificati
 		}
 
 		//Grapple Sfx
-		if (playerDataPack[i].property == "grapple"){
-			if (playerDataPack[i].value.firing == true){
-				sfx.GrappleShot.play();
+		if (playerDataPack[i].property == "grapple" && playerDataPack[i].id == myPlayer.id){
+			if (playerDataPack[i].value.firing == false){
+				sfx.GrappleHit.play();
+				//sfx.GrappleShot.stop();
 			}
-			else {
-				sfx.GrappleShot.stop();
+			else if (playerDataPack[i].value.firing == undefined) {
+				sfx.GrappleHit.stop();
+				//sfx.GrappleShot.stop();
 			}
 		}
 	}//END Player loop
@@ -1405,7 +1411,7 @@ function updateFunction(playerDataPack, thugDataPack, pickupDataPack, notificati
 			if (debugUpdates){
 				logg("Update pickup:" + pickupDataPack[i].id + " x:" + pickupDataPack[i].x + " y:" + pickupDataPack[i].y + " type:" + pickupDataPack[i].type + " amount:" + pickupDataPack[i].amount + " width:" + pickupDataPack[i].width + " height:" + pickupDataPack[i].height);
 			}
-			if (pickupDataPack[i].respawnTimer == 0 && !mute){
+			if (pickupDataPack[i].respawnTimer === 0 && !mute){
 				sfx.WeaponDrop.play();
 			}
 				
@@ -3590,11 +3596,11 @@ function drawPersonalInstructions(){
 	}
 	else if (personalInstructions["cloak"].life > 0 && myPlayer.health > 0){
 		instructionName = "cloak";
-		if (myPlayer.cloakEngaged){personalInstructions[instructionName].life--;}
+		if (myPlayer.cloakEngaged || (myPlayer.grapple && myPlayer.grapple.x)){personalInstructions[instructionName].life--;}
 	}
 	else if (personalInstructions["boost"].life > 0 && myPlayer.health > 0){
 		instructionName = "boost";
-		if (myPlayer.boosting){personalInstructions[instructionName].life--;}
+		if (myPlayer.boosting || (myPlayer.grapple && myPlayer.grapple.x)){personalInstructions[instructionName].life--;}
 	}
 	else if (personalInstructions["utility"].life > 0 && myPlayer.health > 0){
 		instructionName = "utility";
@@ -4026,12 +4032,7 @@ function drawPlayerTags(){
 
 					//Custom namecolor, if accessible
 					if (Player.list[i].customizations && Player.list[i].customizations[Player.list[i].team]) {
-						if (Player.list[i].id == myPlayer.id){
-						}
-						if (myPlayer.settings && myPlayer.settings.display.find(setting => setting.key == "forceTeamNameColors").value == true){
-							nameColor = Player.list[i].team == 1 ? "#9d0000" : "#00259d";
-						}
-						
+						nameColor = Player.list[i].customizations[Player.list[i].team].nameColor;						
 
 						if (gametype != "ffa" && myPlayer.settings && myPlayer.settings.display.find(setting => setting.key == "forceTeamNameColors").value == true && Player.list[i].id != myPlayer.id){
 							nameColor = Player.list[i].team == 1 ? "#9d0000" : "#00259d";
@@ -4628,12 +4629,16 @@ function drawHUD(){
 			
 			ctx.font = '18px Electrolize';
 			fillText(myPlayer.grenades, canvasWidth + 55 - iconWidth, canvasHeight - 77 - liftBottomHUD);
-			
 			if (showWhiteGrenadeRect > 0){
 				ctx.globalAlpha = 1;
 				showWhiteGrenadeRect--;
 				ctx.fillRect(grenadeIconrectX, grenadeIconRectY, Img.grenadeCountIcon.width, Img.grenadeCountIcon.height);
 			}
+			// Add the "Press V to switch" text below the grenade indicator
+			ctx.font = '14px Electrolize'; // Adjust font size if needed
+			ctx.fillStyle = "#FFFFFF"; // Set text color
+			fillText("Press V to switch", canvasWidth - iconWidth + 20, canvasHeight - 50 - liftBottomHUD);
+
 		}
 
 
@@ -7066,31 +7071,55 @@ Line.prototype.step = function() {
 }
 
 
-
 function drawGrapples(){
+	noShadow();
 	for (var p in Player.list){
-		if (!Player.list[p].grapple || typeof Player.list[p].grapple.x === 'undefined'){return;}
+		if (!Player.list[p].grapple || typeof Player.list[p].grapple.x === 'undefined'){continue;}
+		if (Player.list[p].grapple.targetType == "player") {
+			Player.list[p].grapple.x = Player.list[Player.list[p].grapple.targetId].x;
+			Player.list[p].grapple.y = Player.list[Player.list[p].grapple.targetId].y;
+		}
+		if (Player.list[p].grapple.targetType == "pickup") {
+			Player.list[p].grapple.x = Pickup.list[Player.list[p].grapple.targetId].x + Pickup.list[Player.list[p].grapple.targetId].width/2;
+			Player.list[p].grapple.y = Pickup.list[Player.list[p].grapple.targetId].y + Pickup.list[Player.list[p].grapple.targetId].height/2;
+		}
+		if (Player.list[p].grapple.targetType == "grenade") {
+			Player.list[p].grapple.x = Grenade.list[Player.list[p].grapple.targetId].x;
+			Player.list[p].grapple.y = Grenade.list[Player.list[p].grapple.targetId].y;
+		}
+		else if (Player.list[p].grapple.targetType == "bag") {
+			if (Player.list[p].team == 1){
+				Player.list[p].grapple.x = bagBlue.x;
+				Player.list[p].grapple.y = bagBlue.y;
+			}
+			else {
+				Player.list[p].grapple.x = bagRed.x;
+				Player.list[p].grapple.y = bagRed.y;
+			}
+		}
+
 		processGrapple(Player.list[p]);
-		bgCtx.save();
-		bgCtx.translate(centerX - myPlayer.x * zoom + Player.list[p].x * zoom, centerY - myPlayer.y * zoom + Player.list[p].y * zoom); //Center camera on controlled player
-		bgCtx.rotate(180 * Math.PI / 180);
-		bgCtx.rotate((Math.atan2(Player.list[p].y - Player.list[p].grapple.y, Player.list[p].x - Player.list[p].grapple.x) - (90 * Math.PI / 180) ));
-			//drawImage(Img.shot,(-4 + xOffset) * zoom, (-shot.distance - 40 + yOffset) * zoom, Img.shot.width * zoom, shot.distance * zoom);
+		ctx.save();
+		ctx.translate(centerX - myPlayer.x * zoom + Player.list[p].x * zoom, centerY - myPlayer.y * zoom + Player.list[p].y * zoom); //Center camera on controlled player
+		ctx.rotate(Math.PI);
+		ctx.rotate((Math.atan2(Player.list[p].y - Player.list[p].grapple.y, Player.list[p].x - Player.list[p].grapple.x) - (90 * Math.PI / 180) ));
 			var grappleDist = getDistance(Player.list[p].grapple, Player.list[p]);
-			var x = {
+/* 			var x = { !!!//deleteme?
 				firing:true,
 				dir:self.walkingDir,
 				x:self.x,
 				y:self.y
+			} */
+			if (Player.list[p].grapple.firing) {
+				drawImage(Img.grappleChain, (-Img.grappleChain.width/2 - 10) * zoom, 0, (Img.grappleChain.width + 20) * zoom, grappleDist * zoom);
+			} else {
+				drawImage(Img.grappleChainStraight, -Img.grappleChainStraight.width/2 * zoom, 0, Img.grappleChainStraight.width * zoom, grappleDist * zoom);
 			}
-			drawImage(Img.grappleChain, -Img.grappleChain.width/2 * zoom, 0, Img.grappleChain.width * zoom, grappleDist * zoom);
-
-		bgCtx.restore();
+			ctx.restore();
 	}
 }
 
 function processGrapple(player){
-	if (getDistance(player, player.grapple) > 500){player.grapple = {};}
 	if (player.grapple.firing){
 		if (player.grapple.dir == 1){player.grapple.y -= grappleSpeed;}
 		if (player.grapple.dir == 2){player.grapple.y -= grappleSpeed * (2/3); player.grapple.x += grappleSpeed * (2/3);}
@@ -7100,9 +7129,9 @@ function processGrapple(player){
 		if (player.grapple.dir == 6){player.grapple.y += grappleSpeed * (2/3); player.grapple.x -= grappleSpeed * (2/3);}
 		if (player.grapple.dir == 7){player.grapple.x -= grappleSpeed;}
 		if (player.grapple.dir == 8){player.grapple.y -= grappleSpeed * (2/3); player.grapple.x -= grappleSpeed * (2/3);}
-		if (checkBlockCollision(player.grapple)){
+/* 		if (checkBlockCollision(player.grapple)){
 			player.grapple.firing = false;
-		}	
+		} */	
 	}
 }
 
@@ -7400,8 +7429,6 @@ socket.on('endGameProgressResults', function(endGameProgressResults){
 });
 
 function endGameProgressResultsFunction(endGameProgressResults){
-	log("endGameProgressResults");
-	console.log(endGameProgressResults);
 	//Player.list[myPlayer.id].cashEarnedThisGame = endGameProgressResults.expDif;
 	postGameProgressInfo.originalRating = endGameProgressResults.originalRating;
 	postGameProgressInfo.ratingDif = endGameProgressResults.ratingDif;
@@ -7772,7 +7799,7 @@ var hidePlayers = false;
 var hideBlocks = false;
 var showTestSquare = false;
 
-document.onkeydown = function(event){
+document.onkeydown = function(event){ //SendInput
 	var hitKeyCode = event.keyCode;
 	if (chatInput.style.display == "none" && hitKeyCode != 123 && hitKeyCode != 122){
 		event.preventDefault();
@@ -7783,10 +7810,15 @@ document.onkeydown = function(event){
 			hitKeyCode = keyHit.default;
 		}
 	}
-
-	if(hitKeyCode === 87 && chatInput.style.display == "none"){ //W 
+	if(hitKeyCode === 86 && chatInput.style.display == "none"){ //V
+		if (!shop.active){
+			keyPress(86, true);
+		}
+	}
+	else if(hitKeyCode === 87 && chatInput.style.display == "none"){ //W 
 		if (!myPlayer.pressingW && !shop.active){
 			keyPress(87, true);
+			keyPress(83, false);
 		}
 		myPlayer.pressingW = true;
 		if (myPlayer.team == 0 || myPlayer.eliminationSpectate == true){
@@ -7797,6 +7829,7 @@ document.onkeydown = function(event){
 	else if(hitKeyCode === 68 && chatInput.style.display == "none"){ //D 
 		if (!myPlayer.pressingD && !shop.active){
 			keyPress(68, true);
+			keyPress(65, false);
 		}
 		myPlayer.pressingD = true;
 		if (myPlayer.team == 0 || myPlayer.eliminationSpectate == true){
@@ -7807,6 +7840,7 @@ document.onkeydown = function(event){
 	else if(hitKeyCode === 83 && chatInput.style.display == "none"){ //S 
 		if (!myPlayer.pressingS && !shop.active){
 			keyPress(83, true);
+			keyPress(87, false);
 		}
 		myPlayer.pressingS = true;
 		if (myPlayer.team == 0 || myPlayer.eliminationSpectate == true){
@@ -7817,6 +7851,7 @@ document.onkeydown = function(event){
 	else if(hitKeyCode === 65 && chatInput.style.display == "none"){ //A 
 		if (!myPlayer.pressingA && !shop.active){
 			keyPress(65, true);
+			keyPress(68, false);
 		}
 		myPlayer.pressingA = true;
 		if (myPlayer.team == 0 || myPlayer.eliminationSpectate == true){

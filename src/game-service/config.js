@@ -70,7 +70,7 @@ global.voteGametypeIds = [];
 global.voteGametype = true;
 global.voteMap = true;
 global.voteRebalance = true;
-global.pregameIsHorde = true;
+global.pregameIsHorde = false;
 
 //Horde settings
 global.hordeKills = 0;
@@ -102,6 +102,7 @@ global.playerAcceleration = 1;
 global.diagMovementScale = (2/3);
 global.maxEnergyMultiplier = 1;
 global.rechargeDelayTime = 120; //Double for breaking under zero energy
+global.playerMaxHealth = 175;
 global.healDelayTime = 300;
 global.healRate = 5; //Milisecond delay between heal tick after player already started healing (Higher number is slower heal) //regenSpeed healthRegenSpeed
 global.respawnTimeLimit = 3 * 60;
@@ -109,11 +110,26 @@ global.slayerRespawnTimeLimit = 3 * 60; //seconds (translated to frames)
 global.ctfRespawnTimeLimit = 5 * 60; //seconds (translated to frames)
 global.elimRespawnTimeLimit = 2 * 60; //seconds (translated to frames)
 global.bagDrag = 0.85;
-global.playerMaxHealth = 175;
 global.assistDamageThreshold = 30;
-global.grappleSpeed = 20;
-global.grappleStrength = 3;
-global.grappleLength = 5 * 75; //Tiles * 75
+
+//Boost config
+global.boostDamage = 34;
+global.boostEnergyCost = 25;
+global.meleeRange = 50;
+
+global.grappleInsteadOfBoost = true;
+global.drainEnergyOnThrow = !grappleInsteadOfBoost;
+
+//Grapple
+global.grappleEnergy = 10;
+global.grappleSpeed = 60;
+global.grappleLength = 8 * 75; //Tiles * 75
+global.grappleMinDist = 30; 
+global.grappleStrength = 1.3;
+global.grappleReleaseSpeed = 18;
+global.grappleMaxLife = 90;
+global.grappleWhileGrappling = false;
+
 
 global.grenadeEnergyCost = 30;
 global.grenadeTimer = 2 * 60; //Seconds (translated to frames)
@@ -127,11 +143,9 @@ global.grenadeRaySpeed = 8;
 global.grenadeResource = true;
 global.grenadeRechargeSpeed = 0.2; // out of 100
 global.maxGrenades = 2;
+global.grenadeGrabAddTime = 2 * 60; //[Seconds] * [fps] (translated to frames)
+global.forceHoldTime = 20; //[Seconds] * [fps] (translated to frames)
 
-//Boost config
-global.boostDamage = 34;
-global.boostEnergyCost = 25;
-global.meleeRange = 50;
 
 
 //Block config
@@ -154,7 +168,7 @@ global.clientSideMovement = true;
 */
 
 //Cloaking config
-global.cloakingEnabled = true;
+global.cloakingEnabled = false;
 global.cloakDrainSpeed = 0.12;
 global.cloakDrag = 0.5; //Walking speed multiplier when cloaked
 global.cloakInitializeSpeed = 0.02;
@@ -246,7 +260,7 @@ global.shop = {
 
 
 //thug Config
-global.spawnOpposingThug = true; //Whether or not to spawn an opposing thug for each player who enters the game
+global.spawnOpposingThug = false; //Whether or not to spawn an opposing thug for each player who enters the game
 global.thugSightDistance = 600;
 global.thugHealth = 80;
 global.hordeThugHealth = 15;
