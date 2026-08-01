@@ -1,0 +1,23 @@
+<div class="main-content">
+  <app-homepage-banner (playNowClicked)="onPlayNow()"></app-homepage-banner>
+
+  <app-section-titles></app-section-titles>
+
+  <div class="columns">
+    <div class="column-section">
+      <app-server-login
+        (loginClicked)="onLogin()"
+        (createAccountClicked)="onCreateAccount()">
+      </app-server-login>
+      <app-controls-guide></app-controls-guide>
+    </div>
+
+    <div class="column-section">
+      <app-leaderboard [entries]="sampleLeaderboard"></app-leaderboard>
+    </div>
+
+    <div class="column-section">
+      <app-community-section></app-community-section>
+    </div>
+  </div>
+</div>

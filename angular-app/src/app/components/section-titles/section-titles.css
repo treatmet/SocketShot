@@ -1,0 +1,18 @@
+.section-titles {
+  font-size: 40px;
+  font-family: 'Electrolize', sans-serif;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid black;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  flex: 1;
+  text-align: center;
+  padding-top: 5px;
+  font-size: 30px;
+}

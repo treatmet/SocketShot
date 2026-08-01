@@ -1,0 +1,26 @@
+<div class="leaderboard">
+  <table class="stats-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Username</th>
+        <th>Rating</th>
+        <th>Wins</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="entries.length === 0">
+        <td></td>
+        <td>Loading Leaderboard...</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr *ngFor="let entry of entries; let i = index">
+        <td class="rank-cell">{{ i + 1 }}</td>
+        <td>{{ entry.username }}</td>
+        <td>{{ entry.rating }}</td>
+        <td>{{ entry.wins }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

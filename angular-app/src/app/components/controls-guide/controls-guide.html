@@ -1,0 +1,18 @@
+<div class="controls-guide">
+  <div class="controls-title">Controls:</div>
+  <div class="controls-row">
+    <div class="controls-element" *ngFor="let ctrl of primaryControls">
+      <img class="controls-image" [src]="ctrl.icon" [alt]="ctrl.label">
+      <div class="controls-text" [innerHTML]="ctrl.label"></div>
+    </div>
+  </div>
+  <div class="controls-row secondary" [class.visible]="showMore">
+    <div class="controls-element-small" *ngFor="let ctrl of secondaryControls">
+      <img class="controls-image" [src]="ctrl.icon" [alt]="ctrl.label">
+      <div class="controls-text">{{ ctrl.label }}</div>
+    </div>
+  </div>
+  <div class="more-controls">
+    <a href="#" (click)="toggleMoreControls($event)">{{ showMore ? 'fewer controls' : 'more controls' }}</a>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<div class="server-login" *ngIf="!isLoggedIn">
+  <p>(Not logged in)</p>
+  <p>Log in to customize your character, party up with friends, save your progress, and track stats!</p>
+  <button class="login-btn" (click)="onCreateAccount()">Create Account</button>
+  <p>Or</p>
+  <button class="login-btn" (click)="onLogin()">Log In</button>
+</div>

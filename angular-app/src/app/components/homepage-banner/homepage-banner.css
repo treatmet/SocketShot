@@ -1,0 +1,51 @@
+.homepage-banner {
+  background-image: url('/img/icons/art.jpg');
+  background-size: cover;
+  height: 500px;
+  text-align: center;
+  border-bottom: 1px solid black;
+  padding-top: 5px;
+}
+
+.homepage-banner h1 {
+  font-size: 40px;
+  margin: 0;
+  filter: drop-shadow(0 0 0.35rem black);
+}
+
+.homepage-banner h2 {
+  font-size: 20px;
+  margin: 0;
+  filter: drop-shadow(0 0 0.35rem black);
+}
+
+.play-now-wrapper {
+  height: 80%;
+  display: flex;
+  flex-direction: column-reverse;
+  text-align: center;
+}
+
+.play-now-btn {
+  background-color: #eada10;
+  font-size: 32px;
+  font-family: 'Electrolize', sans-serif;
+  margin-bottom: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  margin-left: auto;
+  margin-right: auto;
+  filter: drop-shadow(0 0 0.35rem black);
+  color: white;
+  font-weight: bold;
+  border: 2px solid black;
+  cursor: pointer;
+  text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000,
+    0px 2px 0 #000, 0px -2px 0 #000, -2px 0px 0 #000, 2px 0px 0 #000,
+    4px 4px 0 #000, -4px 4px 0 #000, 4px -4px 0 #000, -4px -4px 0 #000,
+    0px 4px 0 #000, 0px -4px 0 #000, -4px 0px 0 #000, 4px 0px 0 #000;
+}
+
+.play-now-btn:hover {
+  border-color: white;
+}

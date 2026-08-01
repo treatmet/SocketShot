@@ -1,0 +1,45 @@
+.controls-guide {
+  margin-top: 30px;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+}
+
+.controls-title {
+  font-weight: bold;
+  font-size: 40px;
+}
+
+.controls-row {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.controls-row.secondary {
+  display: none;
+}
+
+.controls-row.secondary.visible {
+  display: flex;
+}
+
+.controls-element {
+  width: 33.3%;
+  text-align: center;
+}
+
+.controls-element-small {
+  width: 20%;
+  text-align: center;
+}
+
+.controls-image {
+  max-width: 100%;
+  height: auto;
+}
+
+.more-controls {
+  display: inline-block;
+  margin-top: 30px;
+}
