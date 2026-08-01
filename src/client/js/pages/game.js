@@ -8720,7 +8720,7 @@ var update=()=>{
 	}
 	setTimeout(update, 1);
 }
-setTimeout(update, 1);
+// setTimeout(update, 1);
 
 //Gamepad by Frog
 var gamepad_lastsent = 0;
@@ -8806,4 +8806,4 @@ function gamepad() {
 
 
     setTimeout(gamepad, 1);
-} gamepad();
+} //gamepad();
