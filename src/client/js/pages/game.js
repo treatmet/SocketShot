@@ -174,6 +174,14 @@ var previousPing = 0;
 
 var lowGraphicsMode = true;
 var noShadows = false;
+var usePrerenderedMap = true;
+var usePrerenderedBlocks = true;
+var useAnimationFrameRenderLoop = true;
+var renderLoopMaxFps = 60;
+var renderLoopMaxFpsLowEnd = 30;
+var dynamicRenderFps = true;
+var perfTelemetryEnabled = false;
+var perfTelemetryLogEverySeconds = 5;
 
 //Initialize client-side code variables
 
@@ -424,6 +432,7 @@ socket.on('pingResponse', function (socketId){
 
 var blinkOn = false;
 socket.on('sendClock', function(secondsLeftPlusZeroData, minutesLeftData){
+	clientTimeoutTicker = clientTimeoutSeconds;
 	if (typeof myPlayer == 'undefined' || myPlayer.name == "" || !Player.list[myPlayer.id])
 		return;
 		
@@ -1130,8 +1139,24 @@ function getRotation(direction){
 }
 ////////////////////////////////////////////////////////////////////////////////////
 
+var perfTelemetryTicker = 0;
+var updatePacketsThisSecond = 0;
+var updatePacketBytesThisSecond = 0;
+function estimateUpdatePayloadBytes(playerDataPack, thugDataPack, pickupDataPack, notificationPack, updateEffectPack, updateGrenadePack, miscPack){
+	try {
+		return JSON.stringify([playerDataPack, thugDataPack, pickupDataPack, notificationPack, updateEffectPack, updateGrenadePack, miscPack]).length;
+	}
+	catch (e){
+		return 0;
+	}
+}
+
 var clientInitialized = false;
 socket.on('update', function(playerDataPack, thugDataPack, pickupDataPack, notificationPack, updateEffectPack, updateGrenadePack, miscPack){
+	if (perfTelemetryEnabled){
+		updatePacketsThisSecond++;
+		updatePacketBytesThisSecond += estimateUpdatePayloadBytes(playerDataPack, thugDataPack, pickupDataPack, notificationPack, updateEffectPack, updateGrenadePack, miscPack);
+	}
 	if (clientInitialized){
 		updateFunction(playerDataPack, thugDataPack, pickupDataPack, notificationPack, updateEffectPack, updateGrenadePack, miscPack);
 	}
@@ -1700,7 +1725,9 @@ function updateFunction(playerDataPack, thugDataPack, pickupDataPack, notificati
 		playerDiedTimer = playerDiedTimerMax;
 	}
 
-	drawEverything();
+	if (!useAnimationFrameRenderLoop){
+		drawEverything();
+	}
 }
 var playerDied = "";
 var playerDiedTimer = 0;
@@ -2163,7 +2190,6 @@ function strokeAndFillText(text, x, y, width){
 }
 
 function drawMapElementsOnMapCanvas(){
-	return;
 	logg("Drawing map elements...");
 	m_canvas.width = mapWidth;
 	m_canvas.height = mapHeight;
@@ -2775,7 +2801,6 @@ function drawLegs(){
 }
 
 function drawBlocksOnBlockCanvas(){
-	return;
 	logg("Drawing block elements...");
 
 	block_canvas.width = (mapWidth + 150) ; //+150 to offset the block border which is behind 0,0
@@ -6421,9 +6446,12 @@ function drawEverything(){
 	drawRect(0, 0, canvasWidth, canvasHeight); 	
 	//BGanim();
 
-	
-	//drawMapCanvas();
-	drawMap();
+	if (usePrerenderedMap){
+		drawMapCanvas();
+	}
+	else {
+		drawMap();
+	}
 	//drawBlackMarkets();
 	drawMissingBags();
 
@@ -6434,9 +6462,13 @@ function drawEverything(){
 	drawLaser();
 	//drawBlockLasers();
 	drawGrapples();
-	//drawBlockCanvas();	
+	if (usePrerenderedBlocks){
+		drawBlockCanvas();
+	}
+	else {
+		drawBlocks();
+	}
 	drawExplosions();
-	drawBlocks();
 	drawLaserCanonLaser();
 	drawWallBodies();
 	drawPickups();
@@ -6461,6 +6493,40 @@ function drawEverything(){
 	drawUILayer();
 	fpsCounter++;
 }
+
+var renderLoopStarted = false;
+var lastRenderTimestamp = 0;
+function getRenderIntervalMs(){
+	if (dynamicRenderFps && reallyLowGraphicsMode){
+		return 1000 / renderLoopMaxFpsLowEnd;
+	}
+	return 1000 / renderLoopMaxFps;
+}
+
+function startRenderLoop(){
+	if (!useAnimationFrameRenderLoop || renderLoopStarted){
+		return;
+	}
+	renderLoopStarted = true;
+
+	if (!window.requestAnimationFrame){
+		setInterval(drawEverything, Math.round(getRenderIntervalMs()));
+		return;
+	}
+
+	var renderFrame = function(timestamp){
+		var intervalMs = getRenderIntervalMs();
+		if (!lastRenderTimestamp || timestamp - lastRenderTimestamp >= intervalMs){
+			lastRenderTimestamp = timestamp;
+			drawEverything();
+		}
+		window.requestAnimationFrame(renderFrame);
+	};
+
+	window.requestAnimationFrame(renderFrame);
+}
+
+startRenderLoop();
 
 
 
@@ -7302,6 +7368,20 @@ setInterval(
 
 		fpsInLastSecond = fpsCounter;
 		fpsCounter = 0;
+		if (perfTelemetryEnabled){
+			updatesInLastSecond = updatePacketsThisSecond;
+			var updateKBThisSecond = Math.round((updatePacketBytesThisSecond / 1024) * 10) / 10;
+			perfTelemetryTicker++;
+			if (perfTelemetryTicker >= perfTelemetryLogEverySeconds){
+				console.log("[perf] fps=" + fpsInLastSecond + " updates/s=" + updatesInLastSecond + " updateKB/s=" + updateKBThisSecond + " ping=" + ping);
+				perfTelemetryTicker = 0;
+			}
+			updatePacketsThisSecond = 0;
+			updatePacketBytesThisSecond = 0;
+		}
+		else {
+			updatesInLastSecond = 0;
+		}
 
 		if (reloadOnServerTimeout){
 			clientTimeoutTicker--;

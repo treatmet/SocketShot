@@ -1720,6 +1720,26 @@ var resetHordeMode = function(playerId = false){
 const tickLengthMs = 1000/60;
 var ticksSinceLastSecond = 0;
 var staleCustomGameThresholdTimer = 0;
+var suppressEmptyUpdatePackets = false;
+var serverPerfTelemetryEnabled = false;
+var serverPerfLogEverySeconds = 5;
+var emittedUpdatesThisSecond = 0;
+var skippedEmptyUpdatesThisSecond = 0;
+var emittedUpdateBytesThisSecond = 0;
+var serverPerfLogTicker = 0;
+
+function isEmptyMiscPack(miscPack){
+	return !miscPack || Object.keys(miscPack).length === 0;
+}
+
+function estimateUpdatePacketBytes(playerPack, thugPack, pickupPack, notificationPack, effectPack, grenadePack, miscPack){
+	try {
+		return JSON.stringify([playerPack, thugPack, pickupPack, notificationPack, effectPack, grenadePack, miscPack]).length;
+	}
+	catch (e){
+		return 0;
+	}
+}
 
 var gameLoop = function(){
 	ticksSinceLastSecond++;
@@ -1777,9 +1797,28 @@ var gameLoop = function(){
 		// if (myPlayer && myPlayer.ticksSinceLastPing > 150){
 		// 	continue;
 		// }
+		var shouldSuppressEmptyUpdate = suppressEmptyUpdatePackets
+			&& myUpdatePlayerList.length === 0
+			&& updateThugList.length === 0
+			&& updatePickupList.length === 0
+			&& updateNotificationList.length === 0
+			&& teamFilteredUpdateEffectList.length === 0
+			&& updateGrenadeList.length === 0
+			&& isEmptyMiscPack(updateMisc);
+
+		if (shouldSuppressEmptyUpdate){
+			if (serverPerfTelemetryEnabled){
+				skippedEmptyUpdatesThisSecond++;
+			}
+			continue;
+		}
 
 		//send update
 		socket.emit('update', myUpdatePlayerList, updateThugList, updatePickupList, updateNotificationList, teamFilteredUpdateEffectList, updateGrenadeList, updateMisc);
+		if (serverPerfTelemetryEnabled){
+			emittedUpdatesThisSecond++;
+			emittedUpdateBytesThisSecond += estimateUpdatePacketBytes(myUpdatePlayerList, updateThugList, updatePickupList, updateNotificationList, teamFilteredUpdateEffectList, updateGrenadeList, updateMisc);
+		}
 	}
 
 	//console.log("Sent " + msSinceLastTick + "ms after last tick. Emit took " + msSinceEmit + "ms");
@@ -1888,6 +1927,17 @@ var secondIntervalFunction = function(){
 	//log("ticksSinceLastSecond:" + ticksSinceLastSecond + " Time:" + Date.now() + " TargetNextSecond:" + nextSecond + " WARNING_COUNT:" + warnCount);
 	warnCount = 0;
 	ticksSinceLastSecond = 0;
+	if (serverPerfTelemetryEnabled){
+		serverPerfLogTicker++;
+		if (serverPerfLogTicker >= serverPerfLogEverySeconds){
+			var updateKBThisSecond = Math.round((emittedUpdateBytesThisSecond / 1024) * 10) / 10;
+			console.log("[perf-server] emits/s=" + emittedUpdatesThisSecond + " skippedEmpty/s=" + skippedEmptyUpdatesThisSecond + " updateKB/s=" + updateKBThisSecond);
+			serverPerfLogTicker = 0;
+		}
+		emittedUpdatesThisSecond = 0;
+		skippedEmptyUpdatesThisSecond = 0;
+		emittedUpdateBytesThisSecond = 0;
+	}
 	if (pause == true)
 		return;
 			
